@@ -26,22 +26,24 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
       - uses: actions/checkout@v4
-        if: ${{ steps.release.outputs.releases_created == 'true' }}
+        if: ${{ steps.release.outputs.releases_created == 'true' || github.event_name == 'workflow_dispatch' }}
       # Deliberately omit registry-url: token placeholders preempt OIDC.
       - uses: actions/setup-node@v4
-        if: ${{ steps.release.outputs.releases_created == 'true' }}
+        if: ${{ steps.release.outputs.releases_created == 'true' || github.event_name == 'workflow_dispatch' }}
         with:
           node-version: 22
       - name: Use npm with OIDC support
-        if: ${{ steps.release.outputs.releases_created == 'true' }}
+        if: ${{ steps.release.outputs.releases_created == 'true' || github.event_name == 'workflow_dispatch' }}
         run: npm install -g npm@11
       - run: npm ci
-        if: ${{ steps.release.outputs.releases_created == 'true' }}
+        if: ${{ steps.release.outputs.releases_created == 'true' || github.event_name == 'workflow_dispatch' }}
       - run: npm run verify
-        if: ${{ steps.release.outputs.releases_created == 'true' }}
+        if: ${{ steps.release.outputs.releases_created == 'true' || github.event_name == 'workflow_dispatch' }}
+      # A manual dispatch republishes whatever version is not on npm yet, so a
+      # publish that failed after release-please tagged it can be retried.
       - name: Publish core before adapter
-        if: ${{ steps.release.outputs['packages/l10n-c--release_created'] == 'true' }}
-        run: npm publish --provenance --access public --workspace packages/l10n-c
+        if: ${{ steps.release.outputs['packages/l10n-c--release_created'] == 'true' || github.event_name == 'workflow_dispatch' }}
+        run: node scripts/publish-if-missing.mjs packages/l10n-c
       - name: Publish Vite adapter
-        if: ${{ steps.release.outputs['packages/vite-plugin-l10n-c--release_created'] == 'true' }}
-        run: npm publish --provenance --access public --workspace packages/vite-plugin-l10n-c
+        if: ${{ steps.release.outputs['packages/vite-plugin-l10n-c--release_created'] == 'true' || github.event_name == 'workflow_dispatch' }}
+        run: node scripts/publish-if-missing.mjs packages/vite-plugin-l10n-c
