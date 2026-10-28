@@ -1,5 +1,7 @@
 # l10n-c
 
+> Formerly published under the working name `i18n-c`; npm reserved that name as too similar to an existing package, so the first release ships as `l10n-c`.
+
 Locale editing CLI and bundler-independent core. Requires Node 22.12+; bundles
 target Node 22. Translation strings stay verbatim; public tool messages are English.
 
