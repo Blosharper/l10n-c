@@ -1,6 +1,6 @@
 {
   "name": "vite-plugin-i18n-c",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Development-only Vite translation manager for i18n-c",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -44,7 +44,7 @@
     "esbuild": "^0.25.0"
   },
   "dependencies": {
-    "i18n-c": "^0.1.0"
+    "i18n-c": "^0.2.0"
   },
   "peerDependencies": {
     "vite": ">=5.0.0"
