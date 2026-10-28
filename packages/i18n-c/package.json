@@ -1,0 +1,53 @@
+{
+  "name": "i18n-c",
+  "version": "0.1.0",
+  "description": "Locale editing CLI and bundler-independent core",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./schema.json": "./schema.json"
+  },
+  "files": [
+    "dist",
+    "schema.json"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "prepublishOnly": "npm run build"
+  },
+  "author": "firejune",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Blosharper/i18n-c.git",
+    "directory": "packages/i18n-c"
+  },
+  "bugs": {
+    "url": "https://github.com/Blosharper/i18n-c/issues"
+  },
+  "homepage": "https://github.com/Blosharper/i18n-c#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0"
+  },
+  "bin": {
+    "i18n-c": "./dist/cli.js"
+  },
+  "dependencies": {
+    "prettier": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}
