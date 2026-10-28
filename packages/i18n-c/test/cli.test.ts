@@ -118,6 +118,52 @@ it('edits through the packaged CLI and rejects removed/unknown/malformed options
   expect(help.stdout).not.toContain('--restructure')
 })
 
+it('P1-1: numeric-keyed object and empty nodes survive unrelated CLI --update byte-for-byte and touched files retain shape', async () => {
+  const root = await fixture()
+  const errorsFile = path.join(root, 'messages/en/errors.json')
+  const errors = '{ "errors": { "404": "Not found", "500": "Server" }, "empty": {}, "emptyList": [] }\n'
+  await fs.writeFile(errorsFile, errors)
+  const uiFile = path.join(root, 'messages/en/ui.json')
+  const ui = { ui: { c: 'Old', codes: { '404': 'Not found' }, list: ['One', {}, []], empty: {}, emptyList: [] }, empty: {} }
+  await fs.writeFile(uiFile, JSON.stringify(ui))
+  const french = await fs.readFile(path.join(root, 'messages/fr/ui.json'), 'utf8')
+  expect((await run(root, '--update', 'en:ui.c=C', '--update', 'en:ui.list.0=Updated', '--update', 'en:ui.newCodes.500=New')).code).toBe(0)
+  expect(await fs.readFile(errorsFile, 'utf8')).toBe(errors)
+  expect(await fs.readFile(path.join(root, 'messages/fr/ui.json'), 'utf8')).toBe(french)
+  expect(JSON.parse(await fs.readFile(uiFile, 'utf8'))).toEqual({
+    ...ui,
+    ui: { ...ui.ui, c: 'C', list: ['Updated', {}, []], newCodes: { '500': 'New' } },
+  })
+  expect((await run(root, '--update', 'en:errors.500=Updated server')).code).toBe(0)
+  expect(JSON.parse(await fs.readFile(errorsFile, 'utf8'))).toEqual({ errors: { '404': 'Not found', '500': 'Updated server' }, empty: {}, emptyList: [] })
+})
+
+it.each([
+  ['later-language exact target', { target: 'Keep' }, 'ui.target', 'already exists'],
+  ['subtree collision', { target: { child: 'Keep' } }, 'ui.target', 'already exists'],
+  ['scalar ancestor collision', { parent: 'Keep' }, 'ui.parent.child', 'scalar ancestor'],
+])('P1-2: CLI rename refuses %s before earlier language writes', async (_name, ui, target, message) => {
+  const root = await fixture()
+  await fs.writeFile(path.join(root, 'messages/fr/ui.json'), JSON.stringify({ ui }))
+  const paths = ['en/ui.json', 'fr/ui.json'].map(file => path.join(root, 'messages', file))
+  const before = await Promise.all(paths.map(file => fs.readFile(file, 'utf8')))
+  const result = await run(root, '--rename', `ui.used=${target}`)
+  expect(result.code).toBe(1)
+  expect(result.stderr).toContain(message)
+  expect(result.stdout).not.toContain('renamed successfully')
+  expect(await Promise.all(paths.map(file => fs.readFile(file, 'utf8')))).toEqual(before)
+})
+
+it('P1-2: CLI rename refuses descendant-target before mutation', async () => {
+  const root = await fixture()
+  const paths = ['en/ui.json', 'fr/ui.json'].map(file => path.join(root, 'messages', file))
+  const before = await Promise.all(paths.map(file => fs.readFile(file, 'utf8')))
+  const result = await run(root, '--rename', 'ui.used=ui.used.child')
+  expect(result.code).toBe(1)
+  expect(result.stderr).toContain('descendant')
+  expect(await Promise.all(paths.map(file => fs.readFile(file, 'utf8')))).toEqual(before)
+})
+
 it('accepts inherited-name language and domain strings without prototype lookup', async () => {
   const root = await fixture()
   const update = await run(root, '--update', 'toString:toString.title=Title')

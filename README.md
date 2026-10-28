@@ -69,7 +69,10 @@ public/locales/
 
 Each language is a direct directory; each JSON file is one domain, whose top-level
 key matches the filename. The CLI uses flattened dotted keys (`ui.start`). Nested
-arrays roundtrip with numeric segments (`ui.items.0`). Literal dots in object
+arrays use numeric segments (`ui.items.0`). Edits preserve source objects, arrays
+and empty nodes; missing numeric paths create objects. Only touched files are
+rewritten and mirrored. Deleting or moving an array element retains other indices;
+the removed slot serializes as `null`. Literal dots in object
 keys are not supported. Values written through the tools must be strings.
 `_meta` may appear in any file and stays first on rewrite. `_meta.json` is read
 but excluded from nesting and duplicate checks. `_meta.*` and `parts.N` are
@@ -149,8 +152,10 @@ prefixes classify possible dynamic keys separately; concatenation and arbitrary
 runtime key generation require review. Source aliases are opt-in using
 `referencePrefixes`; no game-specific source directories are scanned implicitly.
 `--restructure` and `convert-to-tw` remain game-specific and are not shipped.
-Unlike the source CLI, cross-domain rename is deliberately refused; same-domain
-rename retains its behavior.
+Unlike the source CLI, cross-domain rename is deliberately refused. Same-domain
+rename preflights all selected languages/files before writing and refuses existing
+targets (including subtrees and empty nodes), descendant targets and scalar or
+array path conflicts. Successful renames count original moved leaves once.
 
 For comparison against the game's read-only checkout, use a separate temporary
 working directory and the compatibility configuration in
@@ -168,7 +173,7 @@ files/domains by filename. Translation key order within each parsed file is kept
 | Behavior | Original game CLI | Extracted package | Parity treatment |
 | --- | --- | --- | --- |
 | Locale/domain iteration | Runtime/filesystem enumeration | Base locale first, remaining codes and filenames sorted | Intended difference; retain raw diffs and compare complete records |
-| Cross-domain rename | Accepted by original implementation | Refuses, names both domains and explains update then delete | Intended refusal; same-domain behavior retained |
+| Rename safety | May overwrite existing targets | Refuses cross-domain moves and preflights same-domain collisions | Intended data-loss prevention |
 | Unused source scope | Fixed game paths and implicit `ui.` | Configurable paths and `referencePrefixes` | Use compatibility config above |
 | Public messages/config paths | Game command wording and paths | English package messages and configured paths | Only documented wording/path normalization |
 

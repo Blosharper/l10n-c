@@ -43,6 +43,155 @@ afterEach(async () => {
       .map((root) => fs.rm(root, { recursive: true, force: true })),
   )
 })
+
+async function fileBytes(root: string): Promise<Record<string, string>> {
+  const result: Record<string, string> = {}
+  async function walk(directory: string) {
+    for (const entry of await fs.readdir(directory, { withFileTypes: true })) {
+      const target = path.join(directory, entry.name)
+      if (entry.isDirectory()) await walk(target)
+      else result[path.relative(root, target)] = await fs.readFile(target, 'utf8')
+    }
+  }
+  await walk(root)
+  return result
+}
+
+describe('P1 source-tree preservation', () => {
+  it.each(['save', 'delete', 'rename', 'replace'] as const)(
+    '%s preserves numeric-keyed objects, arrays and empty nodes in touched files and mirrors',
+    async (operation) => {
+      const { root, store } = await fixture()
+      const ui = {
+        change: 'Change',
+        codes: { '404': 'Not found', '500': 'Server' },
+        empty: {},
+        emptyList: [],
+        list: ['One', { empty: {}, emptyList: [], value: 'Two' }],
+        group: { a: 'Alpha', b: 'Beta', empty: {}, list: [] },
+      }
+      const source = { ui, _meta: { empty: {}, list: [] }, empty: {}, emptyList: [] }
+      const uiFile = path.join(root, 'messages/en/ui.json')
+      const untouchedFile = path.join(root, 'messages/en/errors.json')
+      const untouched = '{ "errors": { "404": "Not found" }, "empty": {}, "list": [] }\n'
+      await fs.writeFile(uiFile, JSON.stringify(source))
+      await fs.writeFile(untouchedFile, untouched)
+      await fs.mkdir(path.join(root, 'mirror/en'), { recursive: true })
+      await fs.writeFile(path.join(root, 'mirror/en/errors.json'), untouched)
+      if (operation === 'save') {
+        await store.saveLocale('en', { 'ui.change': 'Changed', 'ui.list.1.value': 'Updated' })
+        ui.change = 'Changed'
+        ;(ui.list[1] as { value: string }).value = 'Updated'
+      } else if (operation === 'delete') {
+        expect(await store.deleteKeyAcrossLocales('ui.change')).toBe(1)
+        delete (ui as Partial<typeof ui>).change
+      } else if (operation === 'rename') {
+        expect(await store.renameKeyAcrossLocales('ui.group', 'ui.panel')).toBe(2)
+        Object.assign(ui, { panel: ui.group })
+        delete (ui as Partial<typeof ui>).group
+      } else {
+        expect(await store.replaceTextInLocale('en', 'Change', 'Changed')).toBe(1)
+        ui.change = 'Changed'
+      }
+      const written = await fs.readFile(uiFile, 'utf8')
+      expect(JSON.parse(written)).toEqual(source)
+      expect(written.indexOf('"_meta"')).toBeLessThan(written.indexOf('"ui"'))
+      expect(await fs.readFile(path.join(root, 'mirror/en/ui.json'), 'utf8')).toBe(written)
+      expect(await fs.readFile(untouchedFile, 'utf8')).toBe(untouched)
+      expect(await fs.readFile(path.join(root, 'mirror/en/errors.json'), 'utf8')).toBe(untouched)
+    },
+  )
+
+  it('creates missing numeric paths as objects while updating existing array indices as arrays', async () => {
+    const { root, store } = await fixture()
+    await store.saveLocale('en', {
+      'ui.codes.404': 'Not found',
+      'ui.list.0': 'Updated',
+      'ui.list.2.404': 'New object in source array',
+      'errors.500': 'Server',
+    })
+    const ui = JSON.parse(await fs.readFile(path.join(root, 'messages/en/ui.json'), 'utf8')).ui
+    expect(ui.codes).toEqual({ '404': 'Not found' })
+    expect(ui.list).toEqual(['Updated', 'Two', { '404': 'New object in source array' }])
+    expect(JSON.parse(await fs.readFile(path.join(root, 'messages/en/errors.json'), 'utf8'))).toEqual({ errors: { '500': 'Server' } })
+    const before = await fileBytes(root)
+    await expect(store.saveLocale('en', { 'ui.list.label': 'Lost property' })).rejects.toThrow('non-index')
+    await expect(store.saveLocale('en', { 'ui.start.child': 'Lost scalar' })).rejects.toThrow('scalar ancestor')
+    expect(await fileBytes(root)).toEqual(before)
+  })
+
+  it('moves source arrays and numeric-keyed objects without inferring their shapes or recounting leaves', async () => {
+    const { root, store } = await fixture()
+    await fs.writeFile(path.join(root, 'messages/en/ui.json'), JSON.stringify({
+      ui: { group: { codes: { '404': 'Not found' }, list: ['One', {}, []], empty: {}, emptyList: [] }, group_extra: 'Keep' },
+    }))
+    await store.saveLocale('fr', { 'ui.group.a': 'Alpha', 'ui.group.b': 'Beta' })
+    expect(await store.renameKeyAcrossLocales('ui.group', 'ui.grouped', 'ui.json')).toBe(4)
+    expect(JSON.parse(await fs.readFile(path.join(root, 'messages/en/ui.json'), 'utf8'))).toEqual({
+      ui: { grouped: { codes: { '404': 'Not found' }, list: ['One', {}, []], empty: {}, emptyList: [] }, group_extra: 'Keep' },
+    })
+    expect(await store.renameKeyAcrossLocales('ui.grouped.list', 'ui.renamedList')).toBe(1)
+    expect(JSON.parse(await fs.readFile(path.join(root, 'messages/en/ui.json'), 'utf8')).ui.renamedList).toEqual(['One', {}, []])
+    expect(await store.renameKeyAcrossLocales('ui.grouped.codes', 'ui.renamedCodes')).toBe(1)
+    expect(JSON.parse(await fs.readFile(path.join(root, 'messages/en/ui.json'), 'utf8')).ui.renamedCodes).toEqual({ '404': 'Not found' })
+  })
+
+  it('retains source array indices on delete/rename, serializing removed slots as null', async () => {
+    const { root, store } = await fixture()
+    expect(await store.renameKeyAcrossLocales('ui.list.0', 'ui.list.2')).toBe(1)
+    expect(await store.deleteKeyAcrossLocales('ui.list.1')).toBe(1)
+    expect(JSON.parse(await fs.readFile(path.join(root, 'messages/en/ui.json'), 'utf8')).ui.list).toEqual([null, null, 'One'])
+  })
+})
+
+describe('P1 rename preflight', () => {
+  it.each([
+    ['exact target', { target: 'Keep' }, 'ui.target'],
+    ['subtree collision', { target: { child: 'Keep' } }, 'ui.target'],
+    ['empty object target', { target: {} }, 'ui.target'],
+    ['empty array target', { target: [] }, 'ui.target'],
+    ['null target', { target: null }, 'ui.target'],
+    ['scalar ancestor', { parent: 'Keep' }, 'ui.parent.child'],
+    ['array non-index', { parent: ['Keep'] }, 'ui.parent.child'],
+  ])('rejects %s in a later language before earlier files or mirrors change', async (_name, ui, target) => {
+    const { root, store } = await fixture()
+    await fs.mkdir(path.join(root, 'messages/fr'))
+    // No oldKey here: collision checks still cover this language and later file.
+    await fs.writeFile(path.join(root, 'messages/fr/zeta.json'), JSON.stringify({ ui }))
+    const before = await fileBytes(root)
+    await expect(store.renameKeyAcrossLocales('ui.start', target)).rejects.toThrow()
+    expect(await fileBytes(root)).toEqual(before)
+  })
+
+  it('rejects a subtree collision in a later domain file of the same language', async () => {
+    const { root, store } = await fixture()
+    await fs.writeFile(path.join(root, 'messages/en/zeta.json'), '{"ui":{"target":{"child":"Keep"}}}')
+    const before = await fileBytes(root)
+    await expect(store.renameKeyAcrossLocales('ui.start', 'ui.target')).rejects.toThrow('already exists')
+    expect(await fileBytes(root)).toEqual(before)
+  })
+
+  it.each([
+    ['ui.start', 'ui.start.child', 'descendant'],
+    ['ui.group', 'ui.group.child', 'descendant'],
+    ['ui.group.a', 'ui.group', 'already exists'],
+    ['ui.start', 'ui.start', 'already exists'],
+  ])('refuses overlapping rename %s -> %s before writes', async (oldKey, newKey, message) => {
+    const { root, store } = await fixture()
+    const before = await fileBytes(root)
+    await expect(store.renameKeyAcrossLocales(oldKey, newKey)).rejects.toThrow(message)
+    expect(await fileBytes(root)).toEqual(before)
+  })
+
+  it('retains domain filtering and creates missing numeric destination paths as objects', async () => {
+    const { root, store } = await fixture()
+    await fs.writeFile(path.join(root, 'messages/en/zeta.json'), '{"ui":{"codes":{"404":"Outside filter"}}}')
+    const outside = await fs.readFile(path.join(root, 'messages/en/zeta.json'), 'utf8')
+    expect(await store.renameKeyAcrossLocales('ui.start', 'ui.codes.404', 'ui')).toBe(1)
+    expect(JSON.parse(await fs.readFile(path.join(root, 'messages/en/ui.json'), 'utf8')).ui.codes).toEqual({ '404': 'Start' })
+    expect(await fs.readFile(path.join(root, 'messages/en/zeta.json'), 'utf8')).toBe(outside)
+  })
+})
 describe('locale edits', () => {
   it('roundtrips arrays, metadata and new domains; mirrors formatted writes', async () => {
     const { root, store } = await fixture()

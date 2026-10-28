@@ -97,6 +97,56 @@ export interface DuplicateCheckResult {
   invalidValues: Record<string, Record<string, string[]>>
 }
 
+function isTree(value: unknown): value is Record<string, any> {
+  return value !== null && typeof value === 'object'
+}
+
+function treeEntry(tree: any, key: string): { exists: boolean; value?: any } {
+  let current = tree
+  for (const segment of key.split('.')) {
+    if (!isTree(current) || !Object.hasOwn(current, segment))
+      return { exists: false }
+    current = current[segment]
+  }
+  return { exists: true, value: current }
+}
+
+// Existing arrays retain their indices; missing numeric paths are objects.
+function assignmentParent(tree: any, key: string, create: boolean): any {
+  const segments = key.split('.')
+  let current = tree
+  for (let i = 0; i < segments.length; i++) {
+    const segment = segments[i]
+    if (!isTree(current))
+      throw new Error(`Cannot assign "${key}" through a scalar ancestor`)
+    if (
+      Array.isArray(current) &&
+      (!/^(0|[1-9]\d*)$/.test(segment) || Number(segment) >= 2 ** 32 - 1)
+    )
+      throw new Error(`Cannot assign non-index segment "${segment}" in array: ${key}`)
+    if (i === segments.length - 1) return current
+    const node = current as Record<string, any>
+    if (!Object.hasOwn(node, segment)) {
+      if (!create) return
+      node[segment] = {}
+    }
+    current = node[segment]
+  }
+}
+
+function assignTree(tree: any, key: string, value: any): void {
+  assertKey(key)
+  const parent = assignmentParent(tree, key, true)
+  parent[key.split('.').at(-1)!] = value
+}
+
+function deleteTree(tree: any, key: string): void {
+  const segments = key.split('.')
+  const last = segments.pop()!
+  const parent = segments.length ? treeEntry(tree, segments.join('.')).value : tree
+  if (isTree(parent)) delete parent[last]
+}
+
 export function createLocaleStore(config: ResolvedConfig) {
   const LOCALES_DIR = config.localesDir
   const compareLanguages = (a: string, b: string) =>
@@ -107,6 +157,10 @@ export function createLocaleStore(config: ResolvedConfig) {
     data: unknown,
   ): Promise<void> {
     await safePath(LOCALES_DIR, filePath)
+    if (isTree(data) && !Array.isArray(data) && Object.hasOwn(data, '_meta')) {
+      const { _meta, ...rest } = data as Record<string, unknown>
+      data = { _meta, ...rest }
+    }
     const json = JSON.stringify(data, null, 2)
     let formatted: string
     try {
@@ -198,7 +252,8 @@ export function createLocaleStore(config: ResolvedConfig) {
 
     const jsonFiles = files.filter((f) => f.endsWith('.json')).sort()
 
-    const fileDataMap: Record<string, Record<string, string>> = Object.create(null)
+    const fileDataMap: Record<string, any> = Object.create(null)
+    const touchedFiles = new Set<string>()
 
     const segmentToFileMap: Record<string, string> = Object.create(null)
 
@@ -210,8 +265,7 @@ export function createLocaleStore(config: ResolvedConfig) {
           'utf-8',
         )
         const parsed = JSON.parse(content)
-        const flat = flattenObject(parsed)
-        Object.assign(fileDataMap[file], flat)
+        fileDataMap[file] = parsed
 
         for (const key of Object.keys(parsed)) {
           segmentToFileMap[key] = file
@@ -233,24 +287,14 @@ export function createLocaleStore(config: ResolvedConfig) {
       if (!fileDataMap[targetFile]) {
         fileDataMap[targetFile] = Object.create(null)
       }
-      fileDataMap[targetFile][flatKey] = value
+      assignTree(fileDataMap[targetFile], flatKey, value)
+      touchedFiles.add(targetFile)
 
       segmentToFileMap[rootSegment] = targetFile
     }
 
-    for (const [file, flatData] of Object.entries(fileDataMap).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) {
-      if (Object.keys(flatData).length === 0) continue
-
-      const unflattened = unflattenObject(flatData)
-
-      const finalObj: any = {}
-      if (unflattened['_meta']) {
-        finalObj['_meta'] = unflattened['_meta']
-        delete unflattened['_meta']
-      }
-      Object.assign(finalObj, unflattened)
-
-      await writeFormattedJson(path.join(langDirPath, file), finalObj)
+    for (const file of [...touchedFiles].sort()) {
+      await writeFormattedJson(path.join(langDirPath, file), fileDataMap[file])
     }
   }
 
@@ -300,31 +344,13 @@ export function createLocaleStore(config: ResolvedConfig) {
           const parsed = JSON.parse(content)
           const flat = flattenObject(parsed)
 
-          let deletedAny = false
-          if (flat[keyToDelete] !== undefined) {
-            delete flat[keyToDelete]
-            deletedAny = true
-            deletedCount++
-          }
-
-          const prefix = keyToDelete + '.'
-          for (const k of Object.keys(flat)) {
-            if (k.startsWith(prefix)) {
-              delete flat[k]
-              deletedAny = true
-              deletedCount++
-            }
-          }
-
-          if (deletedAny) {
-            const unflattened = unflattenObject(flat)
-            const finalObj: any = {}
-            if (unflattened['_meta']) {
-              finalObj['_meta'] = unflattened['_meta']
-              delete unflattened['_meta']
-            }
-            Object.assign(finalObj, unflattened)
-            await writeFormattedJson(filePath, finalObj)
+          const deletedKeys = Object.keys(flat).filter(
+            (key) => key === keyToDelete || key.startsWith(keyToDelete + '.'),
+          )
+          if (deletedKeys.length) {
+            deleteTree(parsed, keyToDelete)
+            deletedCount += deletedKeys.length
+            await writeFormattedJson(filePath, parsed)
           }
         } catch (err) {
           throw err
@@ -349,6 +375,8 @@ export function createLocaleStore(config: ResolvedConfig) {
       throw new Error(
         `Cross-domain rename from "${sourceDomain}" to "${targetDomain}" is not supported; use --update "LANG:${newKey}=VALUE" then --delete "${oldKey}" instead`,
       )
+    if (newKey.startsWith(oldKey + '.'))
+      throw new Error(`Cannot rename "${oldKey}" into its own descendant "${newKey}"`)
     const entries = await fs.readdir(LOCALES_DIR, { withFileTypes: true })
     const langDirs = entries
       .filter((e) => e.isDirectory())
@@ -358,6 +386,7 @@ export function createLocaleStore(config: ResolvedConfig) {
       })
       .sort(compareLanguages)
     let renamedCount = 0
+    const pending: { filePath: string; parsed: any; keys: string[]; value: any }[] = []
 
     for (const lang of langDirs) {
       const langDirPath = path.join(LOCALES_DIR, lang)
@@ -386,40 +415,30 @@ export function createLocaleStore(config: ResolvedConfig) {
           const parsed = JSON.parse(content)
           const flat = flattenObject(parsed)
 
-          let renamedAny = false
-          if (flat[oldKey] !== undefined) {
-            const value = flat[oldKey]
-            delete flat[oldKey]
-            flat[newKey] = value
-            renamedAny = true
-            renamedCount++
-          }
-
-          const prefix = oldKey + '.'
-          for (const k of Object.keys(flat)) {
-            if (k.startsWith(prefix)) {
-              const value = flat[k]
-              delete flat[k]
-              flat[newKey + '.' + k.slice(prefix.length)] = value
-              renamedAny = true
-              renamedCount++
-            }
-          }
-
-          if (renamedAny) {
-            const unflattened = unflattenObject(flat)
-            const finalObj: any = {}
-            if (unflattened['_meta']) {
-              finalObj['_meta'] = unflattened['_meta']
-              delete unflattened['_meta']
-            }
-            Object.assign(finalObj, unflattened)
-            await writeFormattedJson(filePath, finalObj)
-          }
+          // Preflight every selected language/file, even those without oldKey.
+          if (
+            treeEntry(parsed, newKey).exists ||
+            Object.keys(flat).some((key) => key === newKey || key.startsWith(newKey + '.'))
+          )
+            throw new Error(`Rename target "${newKey}" already exists in ${lang}/${file}`)
+          assignmentParent(parsed, newKey, false)
+          const keys = Object.keys(flat).filter(
+            (key) => key === oldKey || key.startsWith(oldKey + '.'),
+          )
+          if (keys.length)
+            pending.push({ filePath, parsed, keys, value: treeEntry(parsed, oldKey).value })
         } catch (err) {
           throw err
         }
       }
+    }
+
+    // Mutate only after collision checks finish; count the original leaves once.
+    for (const { filePath, parsed, keys, value } of pending) {
+      deleteTree(parsed, oldKey)
+      assignTree(parsed, newKey, value)
+      await writeFormattedJson(filePath, parsed)
+      renamedCount += keys.length
     }
 
     return renamedCount
@@ -466,21 +485,14 @@ export function createLocaleStore(config: ResolvedConfig) {
         for (const key of Object.keys(flat)) {
           const val = String(flat[key])
           if (val.includes(oldText)) {
-            flat[key] = val.replaceAll(oldText, newText)
+            assignTree(parsed, key, val.replaceAll(oldText, newText))
             replaceCount++
             modified = true
           }
         }
 
         if (modified) {
-          const unflattened = unflattenObject(flat)
-          const finalObj: any = {}
-          if (unflattened['_meta']) {
-            finalObj['_meta'] = unflattened['_meta']
-            delete unflattened['_meta']
-          }
-          Object.assign(finalObj, unflattened)
-          await writeFormattedJson(filePath, finalObj)
+          await writeFormattedJson(filePath, parsed)
         }
       } catch (err) {
         throw err
