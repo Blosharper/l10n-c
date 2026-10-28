@@ -1,6 +1,6 @@
 {
   "name": "l10n-c",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Locale editing CLI and bundler-independent core",
   "type": "module",
   "main": "./dist/index.cjs",
