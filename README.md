@@ -12,12 +12,9 @@ Extracted from Blosharper's existing translation tools.
 | [`l10n-c`](packages/l10n-c) | Bundler-independent core, JSON config/schema, and `l10n-c` CLI |
 | [`vite-plugin-l10n-c`](packages/vite-plugin-l10n-c) | Development-only Vite adapter and translation web UI |
 
-Requires Node 22.12 or later (bundles target Node 22). This repository is prepared for its first release;
-initial npm publication and trusted-publisher registration are owner operations.
+Requires Node 22.12 or later (bundles target Node 22). Both packages are on npm, published from CI with provenance.
 
 ## Usage
-
-After publication:
 
 ```sh
 npm install --save-dev l10n-c vite-plugin-l10n-c
