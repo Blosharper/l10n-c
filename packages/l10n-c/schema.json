@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://unpkg.com/i18n-c/schema.json",
-  "title": "i18n-c configuration",
+  "$id": "https://unpkg.com/l10n-c/schema.json",
+  "title": "l10n-c configuration",
   "type": "object",
   "additionalProperties": false,
   "properties": {

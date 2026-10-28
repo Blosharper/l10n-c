@@ -3,23 +3,23 @@ import { spawnSync } from 'node:child_process'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { createHash } from 'node:crypto'
-const out = path.resolve(process.env.I18N_C_RECEIPTS ?? `scratch/verification-${new Date().toISOString().replaceAll(':', '-')}`)
+const out = path.resolve(process.env.L10N_C_RECEIPTS ?? `scratch/verification-${new Date().toISOString().replaceAll(':', '-')}`)
 await fs.mkdir(path.dirname(out), { recursive: true })
 await fs.mkdir(out) // Refuse to replace earlier raw receipts.
 const results = []
 const stages = [
-  ['build', 'npm', ['run', 'build', ...(process.env.I18N_C_BUILD_WORKSPACE ? ['--workspace', process.env.I18N_C_BUILD_WORKSPACE] : [])]],
+  ['build', 'npm', ['run', 'build', ...(process.env.L10N_C_BUILD_WORKSPACE ? ['--workspace', process.env.L10N_C_BUILD_WORKSPACE] : [])]],
   ['typecheck', 'npm', ['run', 'typecheck']],
-  ['test', 'npm', ['test', ...(process.env.I18N_C_TEST_FILES?.split(',') ?? [])]],
+  ['test', 'npm', ['test', ...(process.env.L10N_C_TEST_FILES?.split(',') ?? [])]],
   ['pack-smoke', process.execPath, ['scripts/package-smoke.mjs', path.join(out, 'package-smoke')]],
-  ...(process.env.I18N_C_GAME
+  ...(process.env.L10N_C_GAME
     ? [
         [
           'parity',
           process.execPath,
           [
             'scripts/parity.mjs',
-            process.env.I18N_C_GAME,
+            process.env.L10N_C_GAME,
             path.join(out, 'parity'),
           ],
         ],

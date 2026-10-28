@@ -6,15 +6,15 @@ import assert from 'node:assert/strict'
 import { pathToFileURL } from 'node:url'
 import { createHash } from 'node:crypto'
 import { createServer } from 'vite'
-import i18n from '../packages/vite-plugin-i18n-c/dist/index.js'
+import i18n from '../packages/vite-plugin-l10n-c/dist/index.js'
 
 const game = path.resolve(process.argv[2])
 const output = path.resolve(process.argv[3])
-const dependency = process.env.I18N_C_PLAYWRIGHT_DIR
-if (!dependency) throw new Error('Set I18N_C_PLAYWRIGHT_DIR to existing read-only Playwright dependency')
+const dependency = process.env.L10N_C_PLAYWRIGHT_DIR
+if (!dependency) throw new Error('Set L10N_C_PLAYWRIGHT_DIR to existing read-only Playwright dependency')
 await fs.mkdir(output)
 const { chromium } = await import(pathToFileURL(path.join(dependency, 'index.mjs')).href)
-const temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'i18n-c-browser-'))
+const temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'l10n-c-browser-'))
 const original = path.join(game, 'public/locales')
 const copied = path.join(temporary, 'locales')
 async function inventory(root) {
@@ -38,7 +38,7 @@ let proof = {}
 try {
   await fs.cp(original, copied, { recursive: true, errorOnExist: true })
   assert.deepEqual(await inventory(copied), before)
-  await fs.writeFile(path.join(temporary, 'i18n-c.config.json'), JSON.stringify({ localesDir: 'locales', baseLanguage: 'ko', allowedRoots: { ui: ['ui', 'speech'] }, languageOrder: ['en', 'ko'], mirrors: [] }))
+  await fs.writeFile(path.join(temporary, 'l10n-c.config.json'), JSON.stringify({ localesDir: 'locales', baseLanguage: 'ko', allowedRoots: { ui: ['ui', 'speech'] }, languageOrder: ['en', 'ko'], mirrors: [] }))
   server = await createServer({ root: temporary, configFile: false, plugins: [i18n()], server: { port: 0, host: '127.0.0.1' }, logLevel: 'silent' })
   await server.listen()
   const url = `http://127.0.0.1:${server.httpServer.address().port}/i18n/?language=en,ko`

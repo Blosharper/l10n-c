@@ -1,4 +1,4 @@
-# i18n-c
+# l10n-c
 
 Locale file editing for people and coding agents: search, update, rename, delete,
 replace text, and check missing, nested, duplicate and unused keys. Includes a
@@ -9,8 +9,8 @@ Extracted from Blosharper's existing translation tools.
 
 | Package | Role |
 | --- | --- |
-| [`i18n-c`](packages/i18n-c) | Bundler-independent core, JSON config/schema, and `i18n-c` CLI |
-| [`vite-plugin-i18n-c`](packages/vite-plugin-i18n-c) | Development-only Vite adapter and translation web UI |
+| [`l10n-c`](packages/l10n-c) | Bundler-independent core, JSON config/schema, and `l10n-c` CLI |
+| [`vite-plugin-l10n-c`](packages/vite-plugin-l10n-c) | Development-only Vite adapter and translation web UI |
 
 Requires Node 22.12 or later (bundles target Node 22). This repository is prepared for its first release;
 initial npm publication and trusted-publisher registration are owner operations.
@@ -20,18 +20,18 @@ initial npm publication and trusted-publisher registration are owner operations.
 After publication:
 
 ```sh
-npm install --save-dev i18n-c vite-plugin-i18n-c
-npx i18n-c --help
-npx i18n-c --search start
-npx i18n-c --missing
-npx i18n-c --nest-check
-npx i18n-c --duplicate-check
-npx i18n-c --unused
-npx i18n-c --update 'en:ui.start=Start'
-npx i18n-c --rename 'ui.old=ui.new'
-npx i18n-c --delete 'fr:ui.obsolete'
-npx i18n-c --replace-text 'en:Old=New'
-npx i18n-c --publish '{"en":{"ui.start":"Start"}}'
+npm install --save-dev l10n-c vite-plugin-l10n-c
+npx l10n-c --help
+npx l10n-c --search start
+npx l10n-c --missing
+npx l10n-c --nest-check
+npx l10n-c --duplicate-check
+npx l10n-c --unused
+npx l10n-c --update 'en:ui.start=Start'
+npx l10n-c --rename 'ui.old=ui.new'
+npx l10n-c --delete 'fr:ui.obsolete'
+npx l10n-c --replace-text 'en:Old=New'
+npx l10n-c --publish '{"en":{"ui.start":"Start"}}'
 ```
 
 `--file ui` (or `--domain ui.json`) filters operations to one domain.
@@ -44,7 +44,7 @@ Messages and help are English; translation data is preserved verbatim.
 ```ts
 // vite.config.ts
 import { defineConfig } from 'vite'
-import i18n from 'vite-plugin-i18n-c'
+import i18n from 'vite-plugin-l10n-c'
 export default defineConfig({ plugins: [i18n()] })
 ```
 
@@ -89,15 +89,15 @@ sequential, not transactional; a filesystem failure may leave partial writes.
 
 ## Configuration
 
-Only `i18n-c.config.json` in the CLI working directory (or Vite project root) is
+Only `l10n-c.config.json` in the CLI working directory (or Vite project root) is
 loaded. Paths resolve from that root, independently of the caller's working
 directory in the Vite adapter. There is no upward config search or TS loader.
 Unknown options and malformed configuration fail. Exported `I18nConfig` provides
-TypeScript completion; the package also exports `i18n-c/schema.json`.
+TypeScript completion; the package also exports `l10n-c/schema.json`.
 
 ```json
 {
-  "$schema": "./node_modules/i18n-c/schema.json",
+  "$schema": "./node_modules/l10n-c/schema.json",
   "localesDir": "public/locales",
   "baseLanguage": "en",
   "sourcePaths": ["src", "index.html"],
@@ -124,7 +124,7 @@ The Vite plugin accepts the same options inline, overriding JSON options by
 property. The core has no Vite imports:
 
 ```ts
-import { createI18n, type I18nConfig } from 'i18n-c'
+import { createI18n, type I18nConfig } from 'l10n-c'
 const options: I18nConfig = { localesDir: 'messages', baseLanguage: 'en' }
 const locales = await createI18n(options, process.cwd())
 await locales.saveLocale('en', { 'ui.start': 'Start' })
@@ -177,7 +177,7 @@ files/domains by filename. Translation key order within each parsed file is kept
 | Unused source scope | Fixed game paths and implicit `ui.` | Configurable paths and `referencePrefixes` | Use compatibility config above |
 | Public messages/config paths | Game command wording and paths | English package messages and configured paths | Only documented wording/path normalization |
 
-The default extracted runtime is Node. `I18N_C_PARITY_RUNTIME=bun` can compare the
+The default extracted runtime is Node. `L10N_C_PARITY_RUNTIME=bun` can compare the
 same runtime; it does not disable deterministic ordering. Pre-sort evidence can
 isolate former Bun/Node enumeration differences, but cannot stand in for current
 package results. Optional trailing check names select a targeted rerun.
@@ -205,17 +205,17 @@ both workspaces, checks the tar listings, installs the tarballs into a disposabl
 consumer using npm's offline cache, and runs plain Node ESM/CJS, CLI and real Vite
 HTTP/editor DOM checks. This requires the Vite/happy-dom dependency versions from
 `npm ci` to be present in the local npm cache. It preserves tarballs, raw logs and
-hashes under ignored `scratch/verification-<timestamp>` (override with `I18N_C_RECEIPTS`).
+hashes under ignored `scratch/verification-<timestamp>` (override with `L10N_C_RECEIPTS`).
 Use a fresh receipt directory per run. Optional stage names select a targeted
-retry, e.g. `node scripts/verify.mjs pack-smoke`; with `I18N_C_GAME` set, `parity`
-is another stage. `I18N_C_BUILD_WORKSPACE=packages/i18n-c` limits a repair build to
+retry, e.g. `node scripts/verify.mjs pack-smoke`; with `L10N_C_GAME` set, `parity`
+is another stage. `L10N_C_BUILD_WORKSPACE=packages/l10n-c` limits a repair build to
 the core when the adapter's successful build is unchanged.
-`I18N_C_TEST_FILES` accepts comma-separated test paths for a targeted repair.
-`I18N_C_SKIP_HTTP=1` limits a repeated tarball check to Node/core/CLI when an
+`L10N_C_TEST_FILES` accepts comma-separated test paths for a targeted repair.
+`L10N_C_SKIP_HTTP=1` limits a repeated tarball check to Node/core/CLI when an
 unchanged adapter already has a successful HTTP/DOM receipt. DOM tests do not establish
 browser layout or real browser compatibility. `scripts/browser-smoke.mjs` supports
 an explicitly authorized real-browser check against a disposable copy of game
-locales; it needs an existing Playwright dependency via `I18N_C_PLAYWRIGHT_DIR`,
+locales; it needs an existing Playwright dependency via `L10N_C_PLAYWRIGHT_DIR`,
 takes a grid screenshot, exercises edit/CSV/publish/reload, then closes its browser
 and server. Follow the environment's execution/measurement policy before running. Test workers are bounded to two.
 Use workspace links during development; migrate game consumers only after the

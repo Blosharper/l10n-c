@@ -5,10 +5,10 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 const exec = promisify(execFile)
-const cli = path.resolve('packages/i18n-c/dist/cli.js')
+const cli = path.resolve('packages/l10n-c/dist/cli.js')
 const roots: string[] = []
 async function fixture() {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'i18n-c-cli-'))
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'l10n-c-cli-'))
   roots.push(root)
   await fs.mkdir(path.join(root, 'messages/en'), { recursive: true })
   await fs.mkdir(path.join(root, 'messages/fr'), { recursive: true })
@@ -33,7 +33,7 @@ async function fixture() {
     '{"ui":{"used":"Used"}}',
   )
   await fs.writeFile(
-    path.join(root, 'i18n-c.config.json'),
+    path.join(root, 'l10n-c.config.json'),
     JSON.stringify({
       localesDir: 'messages',
       baseLanguage: 'en',
@@ -114,7 +114,7 @@ it('edits through the packaged CLI and rejects removed/unknown/malformed options
     expect((await run(root, ...args)).code).toBe(1)
   const help = await run(root, '--help')
   expect(help.code).toBe(0)
-  expect(help.stdout).toContain('i18n-c.config.json')
+  expect(help.stdout).toContain('l10n-c.config.json')
   expect(help.stdout).not.toContain('--restructure')
 })
 
@@ -191,7 +191,7 @@ it('refuses cross-domain rename with both domains and explicit update/delete alt
 
 it('emits identical CLI reports when readdir locale/domain order is shuffled', async () => {
   const root = await fixture()
-  const configPath = path.join(root, 'i18n-c.config.json')
+  const configPath = path.join(root, 'l10n-c.config.json')
   const config = JSON.parse(await fs.readFile(configPath, 'utf8'))
   await fs.writeFile(configPath, JSON.stringify({ ...config, baseLanguage: 'fr' }))
   await fs.mkdir(path.join(root, 'messages/de'))

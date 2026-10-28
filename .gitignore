@@ -4,4 +4,4 @@ coverage
 *.tgz
 scratch/
 # Generated browser bundle; shipped by the plugin build.
-packages/vite-plugin-i18n-c/ui/app.js
+packages/vite-plugin-l10n-c/ui/app.js

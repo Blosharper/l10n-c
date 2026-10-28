@@ -7,7 +7,7 @@ import { createHash } from 'node:crypto'
 
 const output = path.resolve(process.argv[2] ?? 'scratch/package-smoke')
 await fs.mkdir(output) // Never replace an earlier receipt.
-const temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'i18n-c-packed-'))
+const temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'l10n-c-packed-'))
 const records = []
 function sha(data) { return createHash('sha256').update(data).digest('hex') }
 async function run(name, command, args, cwd = process.cwd()) {
@@ -30,7 +30,7 @@ try {
     if (/package\/(?:test|src|node_modules)\//m.test(listing)) throw new Error(`Unexpected development files: ${entry.name}`)
     if (!listing.includes('package/dist/index.js') || !listing.includes('package/dist/index.cjs')) throw new Error(`Missing package outputs: ${entry.name}`)
     for (const required of ['LICENSE', 'README.md']) if (!listing.includes(`package/${required}`)) throw new Error(`Missing ${required}: ${entry.name}`)
-    if (entry.name === 'vite-plugin-i18n-c' && !listing.includes('package/ui/app.js')) throw new Error('Missing editor bundle')
+    if (entry.name === 'vite-plugin-l10n-c' && !listing.includes('package/ui/app.js')) throw new Error('Missing editor bundle')
   }
   await fs.writeFile(path.join(output, 'tarballs.json'), JSON.stringify(packed, null, 2) + '\n')
   await fs.writeFile(path.join(temporary, 'package.json'), '{"private":true,"type":"module"}\n')

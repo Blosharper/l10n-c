@@ -5,8 +5,8 @@
   "pull-request-title-pattern": "release: ${component} v${version}",
   "group-pull-request-title-pattern": "release: ${branch}",
   "packages": {
-    "packages/i18n-c": { "package-name": "i18n-c" },
-    "packages/vite-plugin-i18n-c": { "package-name": "vite-plugin-i18n-c" }
+    "packages/l10n-c": { "package-name": "l10n-c" },
+    "packages/vite-plugin-l10n-c": { "package-name": "vite-plugin-l10n-c" }
   },
   "plugins": [{ "type": "node-workspace" }]
 }

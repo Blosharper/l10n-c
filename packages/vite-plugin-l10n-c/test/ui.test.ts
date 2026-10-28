@@ -13,7 +13,7 @@ it('filters languages/keys, edits and publishes a draft, and downloads filtered 
   })
   try {
     const html = await fs.readFile(
-      path.resolve('packages/vite-plugin-i18n-c/ui/index.html'),
+      path.resolve('packages/vite-plugin-l10n-c/ui/index.html'),
       'utf8',
     )
     window.document.write(html.replace(/<script[\s\S]*?<\/script>/g, ''))
@@ -54,7 +54,7 @@ it('filters languages/keys, edits and publishes a draft, and downloads filtered 
     }
     window.URL.revokeObjectURL = vi.fn()
     const script = await fs.readFile(
-      path.resolve('packages/vite-plugin-i18n-c/ui/app.js'),
+      path.resolve('packages/vite-plugin-l10n-c/ui/app.js'),
       'utf8',
     )
     window.eval(script)

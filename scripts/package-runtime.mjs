@@ -4,12 +4,12 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { createRequire } from 'node:module'
 import { spawnSync } from 'node:child_process'
-import { createI18n } from 'i18n-c'
-import i18n from 'vite-plugin-i18n-c'
+import { createI18n } from 'l10n-c'
+import i18n from 'vite-plugin-l10n-c'
 import { createServer } from 'vite'
 import { Window } from 'happy-dom'
 const require = createRequire(import.meta.url)
-for (const name of ['i18n-c', 'vite-plugin-i18n-c']) {
+for (const name of ['l10n-c', 'vite-plugin-l10n-c']) {
   const location = await fs.realpath(require.resolve(name))
   assert.ok(location.startsWith(path.join(process.cwd(), 'node_modules') + path.sep))
   const metadata = JSON.parse(await fs.readFile(path.join(path.dirname(location), '../package.json'), 'utf8'))
@@ -18,22 +18,22 @@ for (const name of ['i18n-c', 'vite-plugin-i18n-c']) {
   assert.ok((await fs.readFile(path.join(path.dirname(location), '../README.md'), 'utf8')).length > 100)
   console.log(`installed ${name}: ${location}; engines ${metadata.engines.node}; LICENSE/README present`)
 }
-assert.equal(typeof require('i18n-c').createI18n, 'function')
-assert.equal(typeof require('vite-plugin-i18n-c').default, 'function')
-assert.equal(JSON.parse(await fs.readFile(require.resolve('i18n-c/schema.json'), 'utf8')).type, 'object')
+assert.equal(typeof require('l10n-c').createI18n, 'function')
+assert.equal(typeof require('vite-plugin-l10n-c').default, 'function')
+assert.equal(JSON.parse(await fs.readFile(require.resolve('l10n-c/schema.json'), 'utf8')).type, 'object')
 await fs.mkdir('messages/en', { recursive: true })
 await fs.mkdir('src')
 await fs.writeFile('src/app.js', "t('ui.start')")
 await fs.writeFile('messages/en/ui.json', '{"ui":{"start":"Start","spare":"Unused"}}')
-await fs.writeFile('i18n-c.config.json', JSON.stringify({ localesDir: 'messages', baseLanguage: 'en', sourcePaths: ['src'], mirrors: ['mirror'], languageOrder: ['en', 'fr'] }))
-const cli = path.resolve('node_modules/i18n-c/dist/cli.js')
+await fs.writeFile('l10n-c.config.json', JSON.stringify({ localesDir: 'messages', baseLanguage: 'en', sourcePaths: ['src'], mirrors: ['mirror'], languageOrder: ['en', 'fr'] }))
+const cli = path.resolve('node_modules/l10n-c/dist/cli.js')
 function command(args, expected = 0) {
   const result = spawnSync(process.execPath, [cli, ...args], { encoding: 'utf8' })
   console.log(JSON.stringify({ command: ['node', cli, ...args], exit: result.status, stdout: result.stdout, stderr: result.stderr }))
   assert.equal(result.status, expected)
   return result
 }
-assert.match(command(['--help']).stdout, /i18n-c.config.json/)
+assert.match(command(['--help']).stdout, /l10n-c.config.json/)
 command(['--update', 'fr:ui.start=Commencer'])
 assert.match(command(['--search', 'Commencer']).stdout, /Found 1 results/)
 assert.match(command(['--unused']).stdout, /  - ui.spare/)
@@ -45,7 +45,7 @@ assert.equal((await core.getLocales()).en['toString.title'], 'Core Node')
 assert.equal(await fs.readFile('mirror/en/toString.json', 'utf8'), await fs.readFile('messages/en/toString.json', 'utf8'))
 console.log('Plain Node ESM/CJS, schema, CLI edits/checks and mirror: PASS')
 
-if (process.env.I18N_C_SKIP_HTTP === '1') { console.log('HTTP/DOM: SKIP; unchanged adapter already verified separately'); process.exit(0) }
+if (process.env.L10N_C_SKIP_HTTP === '1') { console.log('HTTP/DOM: SKIP; unchanged adapter already verified separately'); process.exit(0) }
 let server, window
 const http = []
 async function waitFor(condition) {

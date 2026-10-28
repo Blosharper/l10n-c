@@ -325,10 +325,10 @@ async function run() {
 
   if (showHelp) {
     console.log(`
-🌸 i18n-c
+🌸 l10n-c
 
-Usage: i18n-c [options]
-Config: i18n-c.config.json in the current directory
+Usage: l10n-c [options]
+Config: l10n-c.config.json in the current directory
 
   -h, --help                 Show help
   -f, --file, --domain NAME   Filter one domain (ui or ui.json)
@@ -724,7 +724,7 @@ Invalid nesting, duplicate keys and operation failures exit 1.
                   `\n💡 Removed text '${removedText}' remains in ${foundCount} other entries in [${update.lang}].`,
                 )
                 console.log(
-                  `Consider i18n-c -R "${update.lang}:${removedText}=..."`,
+                  `Consider l10n-c -R "${update.lang}:${removedText}=..."`,
                 )
               }
             }
@@ -786,7 +786,7 @@ Invalid nesting, duplicate keys and operation failures exit 1.
         }
       }
 
-      console.log('🌸 i18n-c')
+      console.log('🌸 l10n-c')
       console.log(`Processing changes for ${langs.length} languages...`)
 
       for (const lang of langs) {
