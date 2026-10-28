@@ -9,9 +9,9 @@ import {
   validateChanges,
   type I18nConfig,
   type LocaleStore,
-} from 'i18n-c'
+} from 'l10n-c'
 
-export type { I18nConfig } from 'i18n-c'
+export type { I18nConfig } from 'l10n-c'
 const assetsDir =
   typeof __dirname !== 'undefined'
     ? path.resolve(__dirname, '../ui')
@@ -54,7 +54,7 @@ async function readChanges(
 export default function i18nPlugin(options: I18nConfig = {}): Plugin {
   let store: LocaleStore
   return {
-    name: 'vite-plugin-i18n-c',
+    name: 'vite-plugin-l10n-c',
     apply: 'serve',
     async configResolved(config) {
       store = await createI18n(options, config.root)

@@ -1,5 +1,5 @@
 {
-  "name": "i18n-c",
+  "name": "l10n-c",
   "version": "0.2.0",
   "description": "Locale editing CLI and bundler-independent core",
   "type": "module",
@@ -26,13 +26,13 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Blosharper/i18n-c.git",
-    "directory": "packages/i18n-c"
+    "url": "git+https://github.com/Blosharper/l10n-c.git",
+    "directory": "packages/l10n-c"
   },
   "bugs": {
-    "url": "https://github.com/Blosharper/i18n-c/issues"
+    "url": "https://github.com/Blosharper/l10n-c/issues"
   },
-  "homepage": "https://github.com/Blosharper/i18n-c#readme",
+  "homepage": "https://github.com/Blosharper/l10n-c#readme",
   "publishConfig": {
     "access": "public"
   },
@@ -42,7 +42,7 @@
     "typescript": "^5.0.0"
   },
   "bin": {
-    "i18n-c": "./dist/cli.js"
+    "l10n-c": "./dist/cli.js"
   },
   "dependencies": {
     "prettier": "^3.0.0"

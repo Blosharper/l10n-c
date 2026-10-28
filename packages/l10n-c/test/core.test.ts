@@ -12,7 +12,7 @@ import {
 } from '../src/index'
 const roots: string[] = []
 async function fixture() {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'i18n-c-core-'))
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'l10n-c-core-'))
   roots.push(root)
   await fs.mkdir(path.join(root, 'messages/en'), { recursive: true })
   await fs.writeFile(
@@ -335,11 +335,11 @@ describe('configuration', () => {
   it('reads only root JSON, applies inline options, and rejects invalid config', async () => {
     const { root } = await fixture()
     await fs.writeFile(
-      path.join(root, 'i18n-c.config.json'),
+      path.join(root, 'l10n-c.config.json'),
       '{"localesDir":"messages","baseLanguage":"en"}',
     )
     await fs.writeFile(
-      path.join(root, 'i18n-c.config.ts'),
+      path.join(root, 'l10n-c.config.ts'),
       'throw new Error("must never execute")',
     )
     expect(
@@ -354,7 +354,7 @@ describe('configuration', () => {
     expect(() => resolveConfig({ surprise: 'ignored' } as never)).toThrow(
       'Unknown',
     )
-    await fs.writeFile(path.join(root, 'i18n-c.config.json'), '{broken')
+    await fs.writeFile(path.join(root, 'l10n-c.config.json'), '{broken')
     await expect(loadConfig(root)).rejects.toThrow()
   })
 })

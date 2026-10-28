@@ -123,7 +123,7 @@ export async function loadConfig(
   let file: I18nConfig = {}
   try {
     file = JSON.parse(
-      await fs.readFile(path.resolve(root, 'i18n-c.config.json'), 'utf8'),
+      await fs.readFile(path.resolve(root, 'l10n-c.config.json'), 'utf8'),
     )
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error

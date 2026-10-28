@@ -1,4 +1,4 @@
 {
-  "packages/i18n-c": "0.2.0",
-  "packages/vite-plugin-i18n-c": "0.2.0"
+  "packages/l10n-c": "0.2.0",
+  "packages/vite-plugin-l10n-c": "0.2.0"
 }

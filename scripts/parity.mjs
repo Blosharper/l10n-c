@@ -11,8 +11,8 @@ if (process.argv.length < 4)
   throw new Error(
     'Usage: node scripts/parity.mjs GAME_CHECKOUT NEW_RECEIPT_DIRECTORY [CHECK...]',
   )
-const cli = path.resolve('packages/i18n-c/dist/cli.js')
-const extractedRuntime = process.env.I18N_C_PARITY_RUNTIME === 'bun' ? 'bun' : process.execPath
+const cli = path.resolve('packages/l10n-c/dist/cli.js')
+const extractedRuntime = process.env.L10N_C_PARITY_RUNTIME === 'bun' ? 'bun' : process.execPath
 const requested = process.argv.slice(4)
 const commands = [
   ['search', ['--search', 'ui.button']],
@@ -24,7 +24,7 @@ const commands = [
 for (const name of requested) if (!commands.some(command => command[0] === name)) throw new Error(`Unknown parity check: ${name}`)
 const selected = commands.filter(command => !requested.length || requested.includes(command[0]))
 const localeRoot = path.join(game, 'public/locales')
-const temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'i18n-c-parity-'))
+const temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'l10n-c-parity-'))
 await fs.mkdir(output) // Deliberately refuse to overwrite an old receipt.
 const config = {
   localesDir: localeRoot,
@@ -41,7 +41,7 @@ const config = {
   referencePrefixes: ['ui.'],
 }
 await fs.writeFile(
-  path.join(temporary, 'i18n-c.config.json'),
+  path.join(temporary, 'l10n-c.config.json'),
   JSON.stringify(config, null, 2) + '\n',
 )
 await fs.writeFile(

@@ -477,7 +477,7 @@ function downloadCSV() {
   const a = document.createElement('a')
   const dateStr = new Date().toISOString().split('T')[0]
   a.href = url
-  a.download = `i18n-c_${dateStr}.csv`
+  a.download = `l10n-c_${dateStr}.csv`
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)

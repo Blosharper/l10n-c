@@ -7,10 +7,10 @@ registry registration, or changing game consumers.
 
 1. Review CI, package contents (`npm pack --dry-run --workspaces`), licenses and
    the independent parity receipts. Keep both initial package versions aligned.
-2. The owner publishes `i18n-c`, then `vite-plugin-i18n-c`, with npm 2FA. New
+2. The owner publishes `l10n-c`, then `vite-plugin-l10n-c`, with npm 2FA. New
    packages need this one-time bootstrap before trusted publishing can be set.
 3. Immediately register a trusted publisher for each package: GitHub owner
-   `Blosharper`, repository `i18n-c`, workflow filename `release.yml`. No environment
+   `Blosharper`, repository `l10n-c`, workflow filename `release.yml`. No environment
    is specified by this workflow; leave that publisher field empty. Complete and
    verify registration within the owner's 48-hour bootstrap window.
 4. Verify registry visibility and provenance with a fresh isolated install.

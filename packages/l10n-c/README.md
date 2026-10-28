@@ -1,19 +1,19 @@
-# i18n-c
+# l10n-c
 
 Locale editing CLI and bundler-independent core. Requires Node 22.12+; bundles
 target Node 22. Translation strings stay verbatim; public tool messages are English.
 
 ```sh
-npm install --save-dev i18n-c
-npx i18n-c --help
-npx i18n-c --search start
-npx i18n-c --missing
-npx i18n-c --nest-check
-npx i18n-c --duplicate-check
-npx i18n-c --unused
-npx i18n-c --update 'en:ui.start=Start'
-npx i18n-c --rename 'ui.old=ui.new'
-npx i18n-c --delete 'fr:ui.obsolete'
+npm install --save-dev l10n-c
+npx l10n-c --help
+npx l10n-c --search start
+npx l10n-c --missing
+npx l10n-c --nest-check
+npx l10n-c --duplicate-check
+npx l10n-c --unused
+npx l10n-c --update 'en:ui.start=Start'
+npx l10n-c --rename 'ui.old=ui.new'
+npx l10n-c --delete 'fr:ui.obsolete'
 ```
 
 Each locale is a directory, each JSON filename a domain: `messages/en/ui.json`
@@ -24,11 +24,11 @@ Cross-domain rename refuses with both domain names; use `--update` for each
 language's target key, then `--delete` the old key. Same-domain subtrees work.
 Game-only restructure and convert-to-tw commands are excluded.
 
-Place `i18n-c.config.json` in the working directory; no upward search or TS loader:
+Place `l10n-c.config.json` in the working directory; no upward search or TS loader:
 
 ```json
 {
-  "$schema": "./node_modules/i18n-c/schema.json",
+  "$schema": "./node_modules/l10n-c/schema.json",
   "localesDir": "messages",
   "baseLanguage": "en",
   "sourcePaths": ["src", "index.html"],
@@ -48,7 +48,7 @@ unused keys. Mirrors receive formatted changed files; primary files remain the
 read source. Cross-file writes are sequential and may partially complete on errors.
 
 ```ts
-import { createI18n, type I18nConfig } from 'i18n-c'
+import { createI18n, type I18nConfig } from 'l10n-c'
 const options: I18nConfig = { localesDir: 'messages', baseLanguage: 'en' }
 const editor = await createI18n(options, process.cwd())
 await editor.saveLocale('en', { 'ui.start': 'Start' })
@@ -61,7 +61,7 @@ file is retained. This is an intentional difference from the source tool's
 runtime/filesystem order.
 
 The core imports no Vite runtime. ESM and CommonJS exports, TypeScript declarations,
-and `i18n-c/schema.json` are included. Pair with `vite-plugin-i18n-c` for the editor.
+and `l10n-c/schema.json` are included. Pair with `vite-plugin-l10n-c` for the editor.
 
 Missing keys and duplicate values are advisory (exit 0); invalid nesting, duplicate
 keys, invalid input and mutation failures exit 1. Unused checks are heuristic:
@@ -69,4 +69,4 @@ code literals cover subtrees, comments only exact keys, templates flag potential
 dynamic keys. Malformed read inputs may be skipped/reported, so checks are not a
 complete JSON integrity gate. No tool rewrites application source.
 
-[Full documentation](https://github.com/Blosharper/i18n-c#readme). MIT license included.
+[Full documentation](https://github.com/Blosharper/l10n-c#readme). MIT license included.

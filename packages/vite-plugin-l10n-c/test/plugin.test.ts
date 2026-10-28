@@ -15,7 +15,7 @@ afterEach(async () => {
   )
 })
 it('serves the packaged editor and exact API routes, writes only valid payloads, isolates configured root', async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'i18n-c-plugin-'))
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'l10n-c-plugin-'))
   roots.push(root)
   await fs.mkdir(path.join(root, 'messages/en'), { recursive: true })
   await fs.writeFile(
