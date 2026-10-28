@@ -1,5 +1,7 @@
 # vite-plugin-l10n-c
 
+> Formerly published under the working name `vite-plugin-i18n-c`; npm reserved that name as too similar to an existing package, so the first release ships as `vite-plugin-l10n-c`.
+
 Development-only translation editor for Vite 5+ (Node 22.12+; bundles target Node 22).
 
 ```ts
