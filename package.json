@@ -1,0 +1,14 @@
+{
+  "name": "i18n-c-monorepo",
+  "private": true,
+  "type": "module",
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p packages/i18n-c && tsc --noEmit -p packages/vite-plugin-i18n-c",
+    "verify": "npm run build && npm run typecheck && npm test"
+  },
+  "devDependencies": { "happy-dom": "^20.14.5", "vitest": "^4.0.0" },
+  "license": "MIT"
+}

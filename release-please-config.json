@@ -1,0 +1,12 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "release-type": "node",
+  "bump-minor-pre-major": true,
+  "pull-request-title-pattern": "release: ${component} v${version}",
+  "group-pull-request-title-pattern": "release: ${branch}",
+  "packages": {
+    "packages/i18n-c": { "package-name": "i18n-c" },
+    "packages/vite-plugin-i18n-c": { "package-name": "vite-plugin-i18n-c" }
+  },
+  "plugins": [{ "type": "node-workspace" }]
+}

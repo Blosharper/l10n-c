@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>i18n-c Translation Manager</title>
+    <style>
+      :root {
+        --bg-color: #121212;
+        --panel-bg: #1e1e1e;
+        --text-main: #e0e0e0;
+        --text-muted: #888;
+        --border-color: #333;
+        --primary: #bb86fc;
+        --danger: #cf6679;
+        --highlight: rgba(187, 134, 252, 0.1);
+      }
+      body {
+        font-family:
+          'Inter',
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          Roboto,
+          Helvetica,
+          Arial,
+          sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: var(--bg-color);
+        color: var(--text-main);
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+      }
+      header {
+        background-color: var(--panel-bg);
+        padding: 1rem 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--border-color);
+        flex-shrink: 0;
+        z-index: 100;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      }
+      h1 {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--primary);
+      }
+      .header-actions {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+      }
+      button {
+        background-color: var(--primary);
+        color: #000;
+        border: none;
+        padding: 0.5rem 1.2rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+      }
+      button:hover:not(:disabled) {
+        opacity: 0.9;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(187, 134, 252, 0.2);
+      }
+      button:disabled {
+        background-color: var(--border-color);
+        color: var(--text-muted);
+        cursor: not-allowed;
+      }
+
+      .table-container {
+        flex-grow: 1;
+        overflow-y: auto;
+        overflow-x: auto;
+        position: relative;
+      }
+      table {
+        width: 100%;
+        min-width: max-content;
+        border-collapse: collapse;
+        table-layout: fixed;
+      }
+      th,
+      td {
+        border: 1px solid var(--border-color);
+        padding: 0;
+        vertical-align: top;
+      }
+      th {
+        background-color: #1a1a1a;
+        color: var(--text-muted);
+        text-align: left;
+        padding: 0.75rem 1rem;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        position: sticky;
+        top: -1px;
+        z-index: 10;
+        min-width: 240px;
+      }
+      th::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -1px;
+        height: 1px;
+        background-color: var(--border-color);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+        pointer-events: none;
+        z-index: 11;
+      }
+      th.key-col {
+        width: 128px;
+        min-width: 128px;
+        max-width: 128px;
+        background-color: #161616;
+        border-right: 2px solid var(--border-color);
+      }
+      th.warning {
+        color: var(--danger);
+      }
+      .key-label {
+        padding: 0.8rem;
+        font-size: 0.75rem;
+        font-family: monospace;
+        color: var(--primary);
+        background-color: #161616;
+        border-right: 2px solid var(--border-color);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .editable-cell {
+        position: relative;
+      }
+      .cell-content {
+        min-height: 20px;
+        white-space: pre-wrap;
+        word-break: break-word;
+        padding: 0.6rem 0.8rem;
+        font-size: 0.75rem;
+        cursor: text;
+        line-height: 1.4;
+      }
+      .editable-cell:hover .cell-content {
+        background-color: rgba(255, 255, 255, 0.05);
+      }
+      .missing .cell-content {
+        color: var(--danger);
+        opacity: 0.7;
+      }
+      textarea {
+        width: 100%;
+        min-height: 48px;
+        background: var(--highlight);
+        border: 2px solid var(--primary);
+        color: var(--text-main);
+        padding: 0.6rem 0.8rem;
+        box-sizing: border-box;
+        resize: vertical;
+        font-family: inherit;
+        font-size: 0.75rem;
+        line-height: 1.4;
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 20;
+      }
+      textarea:focus {
+        outline: none;
+      }
+      .changed {
+        border-left: 3px solid var(--primary);
+      }
+
+      #search {
+        padding: 0.5rem;
+        border-radius: 4px;
+        border: 1px solid var(--border-color);
+        background: var(--bg-color);
+        color: var(--text-main);
+        width: 128px;
+      }
+      #category {
+        padding: 0.5rem;
+        border-radius: 4px;
+        border: 1px solid var(--border-color);
+        background: var(--bg-color);
+        color: var(--text-main);
+      }
+
+      .pagination {
+        display: none;
+      }
+
+      #scroll-sentinel {
+        height: 20px;
+        margin-top: 10px;
+      }
+
+      /* Custom Dropdown Check List */
+      .dropdown-check-list {
+        display: inline-block;
+        position: relative;
+        background: var(--bg-color);
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        min-width: 128px;
+        color: var(--text-main);
+        cursor: pointer;
+        user-select: none;
+        max-width: 128px;
+      }
+      .dropdown-check-list .anchor {
+        display: block;
+        padding: 0.5rem 2rem 0.5rem 0.5rem;
+        position: relative;
+        font-size: 0.85rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .dropdown-check-list .anchor::after {
+        content: '▼';
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.7rem;
+      }
+      .dropdown-check-list .items {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: -1px;
+        right: -1px;
+        background: var(--panel-bg);
+        border: 1px solid var(--border-color);
+        border-top: none;
+        z-index: 1000;
+        max-height: 400px;
+        overflow-y: auto;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      }
+      .dropdown-check-list.visible .items {
+        display: block;
+      }
+      .dropdown-check-list .items li {
+        padding: 0.5rem;
+        font-size: 0.8rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .dropdown-check-list .items li:hover {
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .dropdown-check-list .items input[type='checkbox'] {
+        cursor: pointer;
+      }
+
+
+      .virtual-row {
+        height: 14px;
+      }
+      .virtual-row td {
+        height: 14px;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+
+      ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+      ::-webkit-scrollbar-track {
+        background: var(--bg-color);
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--border-color);
+        border-radius: 5px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--text-muted);
+      }
+
+      .progress-container {
+        height: 3px;
+        width: 100%;
+        background-color: var(--border-color);
+        flex-shrink: 0;
+        position: relative;
+      }
+      .progress-bar {
+        height: 100%;
+        width: 0%;
+        position: absolute;
+        left: 0;
+        top: 0;
+        background: linear-gradient(90deg, #bb86fc, #ff79c6);
+        box-shadow: 0 0 8px var(--primary);
+        border-radius: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>🌸 I18n Manager</h1>
+      <div class="header-actions">
+        <div id="language-dropdown" class="dropdown-check-list">
+          <span class="anchor" id="language-anchor">All Languages</span>
+          <ul class="items" id="language-items"></ul>
+        </div>
+        <div id="category-dropdown" class="dropdown-check-list">
+          <span class="anchor" id="category-anchor">All Categories</span>
+          <ul class="items" id="category-items"></ul>
+        </div>
+        <input type="text" id="search" placeholder="Search keys or translations..." />
+
+        <button id="btn-download-csv">📥 CSV</button>
+        <button id="btn-publish" disabled>🚀 Publish (0)</button>
+      </div>
+    </header>
+
+    <div class="progress-container">
+      <div class="progress-bar" id="progress-bar"></div>
+    </div>
+
+    <div class="table-container" id="table-container">
+      <table id="i18n-table">
+        <thead>
+          <tr id="table-head">
+            <!-- Dynamically generated -->
+          </tr>
+        </thead>
+        <tbody id="table-body">
+          <!-- Dynamically generated -->
+        </tbody>
+      </table>
+      <div id="scroll-sentinel"></div>
+    </div>
+
+    <script type="module" src="/i18n/app.js"></script>
+  </body>
+</html>

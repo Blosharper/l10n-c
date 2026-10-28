@@ -1,0 +1,47 @@
+# Owner merges release PRs. No autonomous merge driver or first-publish bootstrap.
+# Trusted publisher configuration is pinned to THIS filename, release.yml.
+name: release
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions: {}
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+      - uses: actions/checkout@v4
+        if: ${{ steps.release.outputs.releases_created == 'true' }}
+      # Deliberately omit registry-url: token placeholders preempt OIDC.
+      - uses: actions/setup-node@v4
+        if: ${{ steps.release.outputs.releases_created == 'true' }}
+        with:
+          node-version: 22
+      - name: Use npm with OIDC support
+        if: ${{ steps.release.outputs.releases_created == 'true' }}
+        run: npm install -g npm@11
+      - run: npm ci
+        if: ${{ steps.release.outputs.releases_created == 'true' }}
+      - run: npm run verify
+        if: ${{ steps.release.outputs.releases_created == 'true' }}
+      - name: Publish core before adapter
+        if: ${{ steps.release.outputs['packages/i18n-c--release_created'] == 'true' }}
+        run: npm publish --provenance --access public --workspace packages/i18n-c
+      - name: Publish Vite adapter
+        if: ${{ steps.release.outputs['packages/vite-plugin-i18n-c--release_created'] == 'true' }}
+        run: npm publish --provenance --access public --workspace packages/vite-plugin-i18n-c
